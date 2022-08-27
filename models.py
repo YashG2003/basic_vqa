@@ -14,13 +14,13 @@ class ImgEncoder(nn.Module):
            (3) Normalize feature vector.
         """
         super(ImgEncoder, self).__init__()
-        model = models.vgg19(pretrained=True)
+        model = models.vgg19(pretrained=True)  # vgg19 is pretrained with already existing weights, no need to train it
         in_features = model.classifier[-1].in_features  # input size of feature vector
         model.classifier = nn.Sequential(
-            *list(model.classifier.children())[:-1])    # remove last fc layer
+            *list(model.classifier.children())[:-1])    # removes last fc layer, why is it removed ? 
 
         self.model = model                              # loaded model without last fc layer
-        self.fc = nn.Linear(in_features, embed_size)    # feature vector of image
+        self.fc = nn.Linear(in_features, embed_size)    # feature vector of image, embed_size is the desired output_size after LSTM and FC layer
 
     def forward(self, image):
         """Extract feature vector from image vector.
@@ -43,7 +43,7 @@ class QstEncoder(nn.Module):
         self.word2vec = nn.Embedding(qst_vocab_size, word_embed_size)
         self.tanh = nn.Tanh()
         self.lstm = nn.LSTM(word_embed_size, hidden_size, num_layers)
-        self.fc = nn.Linear(2*num_layers*hidden_size, embed_size)     # 2 for hidden and cell states
+        self.fc = nn.Linear(2*num_layers*hidden_size, embed_size)     # 2 factor is for hidden and cell states, we converted 'm'x'n' matrix to 'mn'x'1' 
 
     def forward(self, question):
 
@@ -51,7 +51,7 @@ class QstEncoder(nn.Module):
         qst_vec = self.tanh(qst_vec)
         qst_vec = qst_vec.transpose(0, 1)                             # [max_qst_length=30, batch_size, word_embed_size=300]
         _, (hidden, cell) = self.lstm(qst_vec)                        # [num_layers=2, batch_size, hidden_size=512]
-        qst_feature = torch.cat((hidden, cell), 2)                    # [num_layers=2, batch_size, 2*hidden_size=1024]
+        qst_feature = torch.cat((hidden, cell), 2)  #concatenation is done       # [num_layers=2, batch_size, 2*hidden_size=1024]
         qst_feature = qst_feature.transpose(0, 1)                     # [batch_size, num_layers=2, 2*hidden_size=1024]
         qst_feature = qst_feature.reshape(qst_feature.size()[0], -1)  # [batch_size, 2*num_layers*hidden_size=2048]
         qst_feature = self.tanh(qst_feature)
@@ -68,7 +68,7 @@ class VqaModel(nn.Module):
         self.img_encoder = ImgEncoder(embed_size)
         self.qst_encoder = QstEncoder(qst_vocab_size, word_embed_size, embed_size, num_layers, hidden_size)
         self.tanh = nn.Tanh()
-        self.dropout = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(0.5)  # dropout is used so as to ensure model doesn't overfit, read more about it
         self.fc1 = nn.Linear(embed_size, ans_vocab_size)
         self.fc2 = nn.Linear(ans_vocab_size, ans_vocab_size)
 
@@ -76,7 +76,7 @@ class VqaModel(nn.Module):
 
         img_feature = self.img_encoder(img)                     # [batch_size, embed_size]
         qst_feature = self.qst_encoder(qst)                     # [batch_size, embed_size]
-        combined_feature = torch.mul(img_feature, qst_feature)  # [batch_size, embed_size]
+        combined_feature = torch.mul(img_feature, qst_feature)  # [batch_size, embed_size]  # point-wise multiplication
         combined_feature = self.tanh(combined_feature)
         combined_feature = self.dropout(combined_feature)
         combined_feature = self.fc1(combined_feature)           # [batch_size, ans_vocab_size=1000]
