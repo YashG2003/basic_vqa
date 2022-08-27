@@ -4,20 +4,22 @@ import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
 from PIL import Image
-from utils import text_helper
-
+from utils import text_helper    # read about text_helper
+# Read from torch.utils.data documentation
+# A map-style dataset is one that implements the __getitem__() and __len__() protocols, and represents a map from (possibly non-integral) indices/keys to data samples.
+# For example, such a dataset, when accessed with dataset[idx], could read the idx-th image and its corresponding label from a folder on the disk.
 
 class VqaDataset(data.Dataset):
 
     def __init__(self, input_dir, input_vqa, max_qst_length=30, max_num_ans=10, transform=None):
         self.input_dir = input_dir
         self.vqa = np.load(input_dir+'/'+input_vqa)
-        self.qst_vocab = text_helper.VocabDict(input_dir+'/vocab_questions.txt')
+        self.qst_vocab = text_helper.VocabDict(input_dir+'/vocab_questions.txt')  # the data loaded goes into the file in directory vocab_questions
         self.ans_vocab = text_helper.VocabDict(input_dir+'/vocab_answers.txt')
         self.max_qst_length = max_qst_length
         self.max_num_ans = max_num_ans
-        self.load_ans = ('valid_answers' in self.vqa[0]) and (self.vqa[0]['valid_answers'] is not None)
-        self.transform = transform
+        self.load_ans = ('valid_answers' in self.vqa[0]) and (self.vqa[0]['valid_answers'] is not None)  # self.load_ans is of bool type
+        self.transform = transform # read about it
 
     def __getitem__(self, idx):
 
@@ -29,13 +31,14 @@ class VqaDataset(data.Dataset):
         transform = self.transform
         load_ans = self.load_ans
 
-        image = vqa[idx]['image_path']
-        image = Image.open(image).convert('RGB')
+        image = vqa[idx]['image_path']    # idx is the id of batch of images
+        image = Image.open(image).convert('RGB')  # every image has specific RGB intensity
         qst2idc = np.array([qst_vocab.word2idx('<pad>')] * max_qst_length)  # padded with '<pad>' in 'ans_vocab'
-        qst2idc[:len(vqa[idx]['question_tokens'])] = [qst_vocab.word2idx(w) for w in vqa[idx]['question_tokens']]
+        qst2idc[:len(vqa[idx]['question_tokens'])] = [qst_vocab.word2idx(w) for w in vqa[idx]['question_tokens']]    # read 
         sample = {'image': image, 'question': qst2idc}
+        # sample is a dictionary containing images and question corresponding to it
 
-        if load_ans:
+        if load_ans:  # load_ans is of bool type
             ans2idc = [ans_vocab.word2idx(w) for w in vqa[idx]['valid_answers']]
             ans2idx = np.random.choice(ans2idc)
             sample['answer_label'] = ans2idx         # for training
@@ -48,6 +51,7 @@ class VqaDataset(data.Dataset):
             sample['image'] = transform(sample['image'])
 
         return sample
+    # we have images,question and its answer from the dataset now
 
     def __len__(self):
 
