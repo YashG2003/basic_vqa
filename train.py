@@ -63,7 +63,8 @@ def main(args):
             else:
                 model.eval()
 
-            for batch_idx, batch_sample in enumerate(data_loader[phase]):
+            for batch_idx, batch_sample in enumerate(data_loader[phase]):  # The enumerate() function takes a collection (e.g. a tuple) and returns it as an enumerate object.
+                                                                           # enumerate(iterable, start) The enumerate() function adds a counter as the key of the enumerate object.
 
                 image = batch_sample['image'].to(device)
                 question = batch_sample['question'].to(device)
