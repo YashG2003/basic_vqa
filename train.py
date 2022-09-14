@@ -63,8 +63,9 @@ def main(args):
             else:
                 model.eval()
 
-            for batch_idx, batch_sample in enumerate(data_loader[phase]):
-
+            for batch_idx, batch_sample in enumerate(data_loader[phase]):  # The enumerate() function takes a collection (e.g. a tuple) and returns it as an enumerate object.
+                                                                           # The enumerate() function adds a counter as the key of the enumerate object.
+                                                                           # Syntax: enumerate(iterable object, start)
                 image = batch_sample['image'].to(device)
                 question = batch_sample['question'].to(device)
                 label = batch_sample['answer_label'].to(device)
@@ -72,10 +73,11 @@ def main(args):
 
                 optimizer.zero_grad()
 
-                with torch.set_grad_enabled(phase == 'train'):
+                with torch.set_grad_enabled(phase == 'train'):   # torch.set_grad_enabled(mode)
+                                                                 # set_grad_enabled will enable or disable grads based on its argument mode. It can be used as a context-manager or as a function.
 
                     output = model(image, question)      # [batch_size, ans_vocab_size=1000]
-                    _, pred_exp1 = torch.max(output, 1)  # [batch_size]
+                    _, pred_exp1 = torch.max(output, 1)  # [batch_size]                      # why these 2 lines of code ?
                     _, pred_exp2 = torch.max(output, 1)  # [batch_size]
                     loss = criterion(output, label)
 
